@@ -1,0 +1,77 @@
+{
+  "name": "RSS Feed → Slack Channel",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-1",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://example.com/feed.xml",
+        "options": {}
+      },
+      "id": "rss-1",
+      "name": "Read RSS Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [470, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "channel": {
+          "__rl": true,
+          "value": "#news-feed",
+          "mode": "name"
+        },
+        "text": ":newspaper: *{{ $json.title }}*\n{{ $json.link }}\n\n{{ $json.contentSnippet }}"
+      },
+      "id": "slack-1",
+      "name": "Slack: Post Article",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [690, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_ME",
+          "name": "Slack API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": {
+      "main": [
+        [{ "node": "Read RSS Feed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Read RSS Feed": {
+      "main": [
+        [{ "node": "Slack: Post Article", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "rss" },
+    { "name": "slack" },
+    { "name": "monitoring" }
+  ]
+}

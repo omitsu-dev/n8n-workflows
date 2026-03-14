@@ -1,0 +1,138 @@
+{
+  "name": "Daily GitHub Activity Summary",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "cron-1",
+      "name": "Weekdays 9:00 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "getAll",
+        "owner": "your-org",
+        "repository": "your-repo",
+        "returnAll": false,
+        "limit": 10,
+        "filters": {
+          "state": "open",
+          "since": "={{ $now.minus({ days: 1 }).toISO() }}"
+        }
+      },
+      "id": "github-issues",
+      "name": "GitHub: Recent Issues",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [470, 200],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE_ME",
+          "name": "GitHub API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "pullRequest",
+        "operation": "getAll",
+        "owner": "your-org",
+        "repository": "your-repo",
+        "returnAll": false,
+        "limit": 10,
+        "filters": {
+          "state": "open"
+        }
+      },
+      "id": "github-prs",
+      "name": "GitHub: Open PRs",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [470, 400],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE_ME",
+          "name": "GitHub API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const issues = $input.all().filter(i => i.json.number && !i.json.pull_request);\nconst prs = $input.all().filter(i => i.json.pull_request);\n\nlet summary = ':chart_with_upwards_trend: *Daily GitHub Summary*\\n\\n';\n\nsummary += `*Open Issues (new in 24h):* ${issues.length}\\n`;\nfor (const issue of issues.slice(0, 5)) {\n  summary += `  • <${issue.json.html_url}|#${issue.json.number}> ${issue.json.title}\\n`;\n}\n\nsummary += `\\n*Open PRs:* ${prs.length}\\n`;\nfor (const pr of prs.slice(0, 5)) {\n  summary += `  • <${pr.json.html_url}|#${pr.json.number}> ${pr.json.title} (${pr.json.user.login})\\n`;\n}\n\nreturn [{ json: { summary } }];"
+      },
+      "id": "code-1",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "channel": {
+          "__rl": true,
+          "value": "#dev-daily",
+          "mode": "name"
+        },
+        "text": "={{ $json.summary }}"
+      },
+      "id": "slack-1",
+      "name": "Slack: Post Summary",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [910, 300],
+      "credentials": {
+        "slackApi": {
+          "id": "REPLACE_ME",
+          "name": "Slack API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Weekdays 9:00 AM": {
+      "main": [
+        [
+          { "node": "GitHub: Recent Issues", "type": "main", "index": 0 },
+          { "node": "GitHub: Open PRs", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "GitHub: Recent Issues": {
+      "main": [
+        [{ "node": "Build Summary", "type": "main", "index": 0 }]
+      ]
+    },
+    "GitHub: Open PRs": {
+      "main": [
+        [{ "node": "Build Summary", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Summary": {
+      "main": [
+        [{ "node": "Slack: Post Summary", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    { "name": "github" },
+    { "name": "slack" },
+    { "name": "daily-report" }
+  ]
+}
