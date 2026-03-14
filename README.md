@@ -2,6 +2,8 @@
 
 Production-ready n8n workflow templates for common automation tasks. Import, configure credentials, and activate.
 
+Built by the developer behind [32blog.com](https://32blog.com).
+
 ## Workflows
 
 | Workflow | Trigger | Action | File |
